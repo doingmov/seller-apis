@@ -11,6 +11,26 @@ logger = logging.getLogger(__file__)
 
 
 def get_product_list(page, campaign_id, access_token):
+    """
+    Получить список товаров магазина Яндекс.Маркет для конкретной страницы.
+
+    Args:
+        page (str): Токен следующей страницы. Пустая строка для первой страницы.
+        campaign_id (str): ID кампании магазина на Яндекс.Маркет.
+        access_token (str): Токен доступа к API.
+
+    Returns:
+        dict: Словарь с данными о товарах и информацией о пагинации.
+
+    Example:
+        >>> get_product_list("", "12345", "token")
+        {'offerMappingEntries': [...], 'paging': {...}}
+
+        >>> get_product_list(None, "12345", "token")
+        Traceback (most recent call last):
+            ...
+        requests.exceptions.RequestException
+    """
     endpoint_url = "https://api.partner.market.yandex.ru/"
     headers = {
         "Content-Type": "application/json",
@@ -30,6 +50,24 @@ def get_product_list(page, campaign_id, access_token):
 
 
 def update_stocks(stocks, campaign_id, access_token):
+     """
+    Обновить остатки товаров на складе Яндекс.Маркет.
+
+    Args:
+        stocks (list): Список словарей с SKU и количеством.
+        campaign_id (str): ID кампании магазина.
+        access_token (str): Токен доступа к API.
+
+    Returns:
+        dict: Ответ от API с результатом обновления.
+
+    Example:
+        >>> update_stocks([{'sku': '001', 'warehouseId': 10, 'items':[{'count': 5, 'type': 'FIT'}]}], "12345", "token")
+        {'result': 'success'}
+
+        >>> update_stocks([], "12345", "token")
+        {'result': 'success'}
+    """
     endpoint_url = "https://api.partner.market.yandex.ru/"
     headers = {
         "Content-Type": "application/json",
@@ -46,6 +84,24 @@ def update_stocks(stocks, campaign_id, access_token):
 
 
 def update_price(prices, campaign_id, access_token):
+    """
+    Обновить цены товаров на Яндекс.Маркет.
+
+    Args:
+        prices (list): Список словарей с ID товара и ценой.
+        campaign_id (str): ID кампании магазина.
+        access_token (str): Токен доступа к API.
+
+    Returns:
+        dict: Ответ API с результатом обновления.
+
+    Example:
+        >>> update_price([{'id': '001', 'price': {'value': 5990, 'currencyId': 'RUR'}}], "12345", "token")
+        {'result': 'success'}
+
+        >>> update_price([], "12345", "token")
+        {'result': 'success'}
+    """
     endpoint_url = "https://api.partner.market.yandex.ru/"
     headers = {
         "Content-Type": "application/json",
@@ -62,7 +118,25 @@ def update_price(prices, campaign_id, access_token):
 
 
 def get_offer_ids(campaign_id, market_token):
-    """Получить артикулы товаров Яндекс маркета"""
+    """
+    Получить список артикулов (SKU) всех товаров магазина Яндекс.Маркет.
+
+    Args:
+        campaign_id (str): ID кампании магазина.
+        market_token (str): Токен доступа к API.
+
+    Returns:
+        list: Список строк с артикульными номерами товаров.
+
+    Example:
+        >>> get_offer_ids("12345", "token")
+        ['001', '002', '003']
+
+        >>> get_offer_ids("invalid_id", "token")
+        Traceback (most recent call last):
+            ...
+        requests.exceptions.RequestException
+    """
     page = ""
     product_list = []
     while True:
@@ -78,6 +152,24 @@ def get_offer_ids(campaign_id, market_token):
 
 
 def create_stocks(watch_remnants, offer_ids, warehouse_id):
+    """
+    Создание данных для обновления остатков на складе Яндекс.Маркет.
+
+    Args:
+        watch_remnants (list): Список словарей с данными о товарах от поставщика.
+        offer_ids (list): Список SKU товаров, доступных в кампании.
+        warehouse_id (int): ID склада на Яндекс.Маркет.
+
+    Returns:
+        list: Список словарей с количеством и SKU для обновления остатков.
+
+    Example:
+        >>> create_stocks([{'Код': '001', 'Количество': '5'}], ['001'], 10)
+        [{'sku': '001', 'warehouseId': 10, 'items': [{'count': 5, 'type': 'FIT', 'updatedAt': '2025-12-23T12:00:00Z'}]}]
+
+        >>> create_stocks([], [], 10)
+        []
+    """
     # Уберем то, что не загружено в market
     stocks = list()
     date = str(datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z")
@@ -123,6 +215,23 @@ def create_stocks(watch_remnants, offer_ids, warehouse_id):
 
 
 def create_prices(watch_remnants, offer_ids):
+        """
+    Создание данных для обновления цен товаров на Яндекс.Маркет.
+
+    Args:
+        watch_remnants (list): Список словарей с данными о товарах от поставщика.
+        offer_ids (list): Список SKU товаров, доступных в кампании.
+
+    Returns:
+        list: Список словарей с ID товара и ценой.
+
+    Example:
+        >>> create_prices([{'Код': '001', 'Цена': "5'990.00 руб."}], ['001'])
+        [{'id': '001', 'price': {'value': 5990, 'currencyId': 'RUR'}}]
+
+        >>> create_prices([], [])
+        []
+    """
     prices = []
     for watch in watch_remnants:
         if str(watch.get("Код")) in offer_ids:
@@ -143,6 +252,21 @@ def create_prices(watch_remnants, offer_ids):
 
 
 async def upload_prices(watch_remnants, campaign_id, market_token):
+        """
+    Загрузить цены товаров на Яндекс.Маркет.
+
+    Args:
+        watch_remnants (list): Список словарей с данными о товарах.
+        campaign_id (str): ID кампании магазина.
+        market_token (str): Токен доступа к API.
+
+    Returns:
+        list: Список загруженных цен.
+
+    Example:
+        >>> await upload_prices([{'Код': '001', 'Цена': "5'990.00 руб."}], "12345", "token")
+        [{'id': '001', 'price': {'value': 5990, 'currencyId': 'RUR'}}]
+    """
     offer_ids = get_offer_ids(campaign_id, market_token)
     prices = create_prices(watch_remnants, offer_ids)
     for some_prices in list(divide(prices, 500)):
@@ -151,6 +275,22 @@ async def upload_prices(watch_remnants, campaign_id, market_token):
 
 
 async def upload_stocks(watch_remnants, campaign_id, market_token, warehouse_id):
+    """
+    Загрузить остатки товаров на Яндекс.Маркет.
+
+    Args:
+        watch_remnants (list): Список словарей с данными о товарах.
+        campaign_id (str): ID кампании магазина.
+        market_token (str): Токен доступа к API.
+        warehouse_id (int): ID склада на Яндекс.Маркет.
+
+    Returns:
+        tuple: (not_empty, stocks) — список товаров с ненулевыми остатками и полный список.
+
+    Example:
+        >>> await upload_stocks([{'Код': '001', 'Количество': '5'}], "12345", "token", 10)
+        ([{'sku': '001', 'warehouseId': 10, 'items': [{'count': 5, 'type': 'FIT'}]}], [...])
+    """
     offer_ids = get_offer_ids(campaign_id, market_token)
     stocks = create_stocks(watch_remnants, offer_ids, warehouse_id)
     for some_stock in list(divide(stocks, 2000)):
