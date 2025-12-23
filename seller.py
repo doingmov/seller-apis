@@ -12,7 +12,23 @@ logger = logging.getLogger(__file__)
 
 
 def get_product_list(last_id, client_id, seller_token):
-    """Получить список товаров магазина озон"""
+    """Получает список товаров магазина Ozon.
+
+    Args:
+        last_id (str): ID последнего товара для постраничного запроса.
+        client_id (str): ID клиента Ozon.
+        seller_token (str): API-ключ продавца.
+
+    Returns:
+        dict: Словарь с информацией о товарах.
+
+    Examples:
+        >>> get_product_list("", "123", "token")
+        {'items': [...], 'total': 10, 'last_id': 'abc'}
+
+        >>> get_product_list(None, "123", "token")
+        Traceback (TypeError)
+    """
     url = "https://api-seller.ozon.ru/v2/product/list"
     headers = {
         "Client-Id": client_id,
@@ -32,7 +48,22 @@ def get_product_list(last_id, client_id, seller_token):
 
 
 def get_offer_ids(client_id, seller_token):
-    """Получить артикулы товаров магазина озон"""
+    """Возвращает список артикулов товаров магазина.
+
+    Args:
+        client_id (str): ID клиента Ozon.
+        seller_token (str): API-ключ продавца.
+
+    Returns:
+        list: Список строк с offer_id каждого товара.
+
+    Examples:
+        >>> get_offer_ids("123", "token")
+        ['offer1', 'offer2']
+
+        >>> get_offer_ids("", "")
+        Traceback (requests.exceptions.HTTPError)
+    """
     last_id = ""
     product_list = []
     while True:
@@ -49,7 +80,23 @@ def get_offer_ids(client_id, seller_token):
 
 
 def update_price(prices: list, client_id, seller_token):
-    """Обновить цены товаров"""
+    """Обновляет цены товаров на Ozon.
+
+    Args:
+        prices (list): Список словарей с ценами для каждого товара.
+        client_id (str): ID клиента Ozon.
+        seller_token (str): API-ключ продавца.
+
+    Returns:
+        dict: Ответ API с результатами обновления.
+
+    Examples:
+        >>> update_price([{'offer_id': '123', 'price': '5990'}], "123", "token")
+        {'updated': 1}
+
+        >>> update_price([], "123", "token")
+        Traceback (requests.exceptions.HTTPError)
+    """
     url = "https://api-seller.ozon.ru/v1/product/import/prices"
     headers = {
         "Client-Id": client_id,
@@ -62,7 +109,23 @@ def update_price(prices: list, client_id, seller_token):
 
 
 def update_stocks(stocks: list, client_id, seller_token):
-    """Обновить остатки"""
+    """Обновляет остатки товаров на Ozon.
+
+    Args:
+        stocks (list): Список словарей с остатками для каждого товара.
+        client_id (str): ID клиента Ozon.
+        seller_token (str): API-ключ продавца.
+
+    Returns:
+        dict: Ответ API с результатами обновления.
+
+    Examples:
+        >>> update_stocks([{'offer_id': '123', 'stock': 10}], "123", "token")
+        {'updated': 1}
+
+        >>> update_stocks([], "123", "token")
+        Traceback (requests.exceptions.HTTPError)
+    """
     url = "https://api-seller.ozon.ru/v1/product/import/stocks"
     headers = {
         "Client-Id": client_id,
@@ -75,7 +138,18 @@ def update_stocks(stocks: list, client_id, seller_token):
 
 
 def download_stock():
-    """Скачать файл ostatki с сайта casio"""
+    """Скачивает файл с остатками часов Casio и возвращает их как список.
+
+    Returns:
+        list: Список словарей с информацией о каждом часе.
+
+    Examples:
+        >>> download_stock()
+        [{'Код': '123', 'Количество': '5', 'Цена': "5'990.00 руб."}]
+
+        >>> download_stock()
+        Traceback (requests.exceptions.ConnectionError)
+    """
     # Скачать остатки с сайта
     casio_url = "https://timeworld.ru/upload/files/ostatki.zip"
     session = requests.Session()
@@ -131,12 +205,51 @@ def create_prices(watch_remnants, offer_ids):
 
 
 def price_conversion(price: str) -> str:
-    """Преобразовать цену. Пример: 5'990.00 руб. -> 5990"""
+    """Преобразует цену из текстового формата в число без разделителей.
+
+    Функция удаляет все символы, кроме цифр, и возвращает строку с числом.
+    Например, строка "5'990.00 руб." превращается в "5990".
+
+    Args:
+        price (str): Цена в виде строки, которая может содержать пробелы,
+        валюту и дробные части.
+
+    Returns:
+        str: Цена в виде числа в виде строки (без пробелов и валюты).
+
+    Examples:
+        Correct usage:
+            >>> price_conversion("5'990.00 руб.")
+            '5990'
+            >>> price_conversion("12 345,00 руб.")
+            '12345'
+
+        Incorrect usage (может вернуть пустую строку или некорректное значение):
+            >>> price_conversion(None)
+            Traceback (TypeError)
+            >>> price_conversion(5990)
+            Traceback (AttributeError)
+    """
     return re.sub("[^0-9]", "", price.split(".")[0])
 
 
 def divide(lst: list, n: int):
-    """Разделить список lst на части по n элементов"""
+    """Разбивает список на части по n элементов.
+
+    Args:
+        lst (list): Исходный список.
+        n (int): Размер частей.
+
+    Returns:
+        generator: Генератор списков длиной до n элементов.
+
+    Examples:
+        >>> list(divide([1,2,3,4], 2))
+        [[1,2],[3,4]]
+
+        >>> list(divide([], 2))
+        [[]]
+    """
     for i in range(0, len(lst), n):
         yield lst[i : i + n]
 
